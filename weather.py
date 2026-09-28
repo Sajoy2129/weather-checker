@@ -1,7 +1,6 @@
 """Terminal weather checker using the free Open-Meteo API (no API key needed)."""
 
 import sys
-from datetime import date
 
 import requests
 
@@ -65,33 +64,19 @@ def get_weather(latitude, longitude):
     }
 
 
-def format_day(date_text):
-    """Turn an ISO date like '2026-09-29' into a short label like 'Tue 29 Sep'."""
-    return date.fromisoformat(date_text).strftime("%a %d %b")
-
-
 def format_report(location, weather):
     """Build the text shown to the user."""
     place = location["name"]
     if location["country"]:
         place += f", {location['country']}"
 
-    lines = [
-        f"Weather for {place}",
-        f"  Temperature:  {weather['temperature']:.1f} °C",
-        f"  Wind speed:   {weather['wind_speed']:.1f} km/h",
+    return (
+        f"Weather for {place}\n"
+        f"  Temperature:  {weather['temperature']:.1f} °C\n"
+        f"  Wind speed:   {weather['wind_speed']:.1f} km/h\n"
         f"  Today:        high {weather['high']:.1f} °C"
-        f" / low {weather['low']:.1f} °C",
-        "",
-        f"Next {len(weather['forecast'])} days",
-    ]
-    for day in weather["forecast"]:
-        label = format_day(day["date"]) + ":"
-        lines.append(
-            f"  {label:<14}high {day['high']:.1f} °C / low {day['low']:.1f} °C"
-        )
-
-    return "\n".join(lines)
+        f" / low {weather['low']:.1f} °C"
+    )
 
 
 def main():
