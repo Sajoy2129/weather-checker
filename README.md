@@ -8,17 +8,23 @@ the free [Open-Meteo](https://open-meteo.com/) API. No sign-up or API key needed
 - Look up any city by name
 - Current temperature (°C) and wind speed (km/h)
 - Today's high and low, in the city's own timezone
+- A 3-day forecast (high and low for each of the next 3 days)
 - Friendly messages for empty input, unknown cities and network errors
 
 ## Example
 
 ```
 $ python weather.py
-Enter a city: Paris
-Weather for Paris, France
-  Temperature:  21.7 °C
-  Wind speed:   9.7 km/h
-  Today:        high 24.1 °C / low 17.6 °C
+Enter a city: Dubai
+Weather for Dubai, United Arab Emirates
+  Temperature:  29.4 °C
+  Wind speed:   7.1 km/h
+  Today:        high 41.3 °C / low 26.4 °C
+
+Next 3 days
+  Tue 29 Sep:   high 42.3 °C / low 25.1 °C
+  Wed 30 Sep:   high 40.0 °C / low 25.3 °C
+  Thu 01 Oct:   high 41.2 °C / low 26.4 °C
 ```
 
 ## Requirements
@@ -64,7 +70,7 @@ The program makes two requests to Open-Meteo:
    its latitude and longitude.
 2. **Get the weather**: `get_weather()` sends those coordinates to the
    [forecast API](https://open-meteo.com/en/docs) and gets back the current
-   conditions and today's high and low.
+   conditions, today's high and low, and the next 3 days.
 
 `format_report()` then turns the results into the text you see.
 

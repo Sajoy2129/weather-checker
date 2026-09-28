@@ -1,12 +1,14 @@
 """Terminal weather checker using the free Open-Meteo API (no API key needed)."""
 
 import sys
+from datetime import date
 
 import requests
 
 GEOCODING_URL = "https://geocoding-api.open-meteo.com/v1/search"
 FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
 TIMEOUT_SECONDS = 10
+FORECAST_DAYS = 3  # days to show after today
 
 
 def find_location(city):
@@ -30,25 +32,42 @@ def find_location(city):
 
 
 def get_weather(latitude, longitude):
-    """Fetch current temperature, wind speed and today's high/low."""
+    """Fetch current conditions, today's high/low and the next days' forecast."""
     params = {
         "latitude": latitude,
         "longitude": longitude,
         "current": "temperature_2m,wind_speed_10m",
         "daily": "temperature_2m_max,temperature_2m_min",
         "timezone": "auto",  # "today" in the city's own timezone
-        "forecast_days": 1,
+        "forecast_days": 1 + FORECAST_DAYS,  # today plus the days ahead
     }
     response = requests.get(FORECAST_URL, params=params, timeout=TIMEOUT_SECONDS)
     response.raise_for_status()
     data = response.json()
+    daily = data["daily"]
+
+    # Daily values are lists with one entry per day: index 0 is today.
+    forecast = [
+        {
+            "date": daily["time"][day],
+            "high": daily["temperature_2m_max"][day],
+            "low": daily["temperature_2m_min"][day],
+        }
+        for day in range(1, 1 + FORECAST_DAYS)
+    ]
 
     return {
         "temperature": data["current"]["temperature_2m"],
         "wind_speed": data["current"]["wind_speed_10m"],
-        "high": data["daily"]["temperature_2m_max"][0],
-        "low": data["daily"]["temperature_2m_min"][0],
+        "high": daily["temperature_2m_max"][0],
+        "low": daily["temperature_2m_min"][0],
+        "forecast": forecast,
     }
+
+
+def format_day(date_text):
+    """Turn an ISO date like '2026-09-29' into a short label like 'Tue 29 Sep'."""
+    return date.fromisoformat(date_text).strftime("%a %d %b")
 
 
 def format_report(location, weather):
@@ -57,13 +76,22 @@ def format_report(location, weather):
     if location["country"]:
         place += f", {location['country']}"
 
-    return (
-        f"Weather for {place}\n"
-        f"  Temperature:  {weather['temperature']:.1f} °C\n"
-        f"  Wind speed:   {weather['wind_speed']:.1f} km/h\n"
+    lines = [
+        f"Weather for {place}",
+        f"  Temperature:  {weather['temperature']:.1f} °C",
+        f"  Wind speed:   {weather['wind_speed']:.1f} km/h",
         f"  Today:        high {weather['high']:.1f} °C"
-        f" / low {weather['low']:.1f} °C"
-    )
+        f" / low {weather['low']:.1f} °C",
+        "",
+        f"Next {len(weather['forecast'])} days",
+    ]
+    for day in weather["forecast"]:
+        label = format_day(day["date"]) + ":"
+        lines.append(
+            f"  {label:<14}high {day['high']:.1f} °C / low {day['low']:.1f} °C"
+        )
+
+    return "\n".join(lines)
 
 
 def main():
