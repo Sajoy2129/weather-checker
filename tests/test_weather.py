@@ -92,3 +92,54 @@ def test_format_report():
         "  Wind speed:   12.3 km/h\n"
         "  Today:        high 21.0 °C / low 12.6 °C"
     )
+
+
+def test_parse_unit_accepts_c_and_f_in_any_case():
+    assert weather.parse_unit("c") == "C"
+    assert weather.parse_unit("F") == "F"
+    assert weather.parse_unit(" fahrenheit ") == "F"
+
+
+def test_parse_unit_defaults_to_celsius_on_empty_answer():
+    assert weather.parse_unit("") == "C"
+
+
+def test_parse_unit_rejects_other_answers():
+    assert weather.parse_unit("kelvin") is None
+
+
+def test_get_weather_sends_chosen_unit(monkeypatch):
+    data = {
+        "current": {"temperature_2m": 65.1, "wind_speed_10m": 12.3},
+        "daily": {
+            "time": ["2026-09-28", "2026-09-29", "2026-09-30", "2026-10-01"],
+            "temperature_2m_max": [70.0, 72.5, 66.2, 63.0],
+            "temperature_2m_min": [54.7, 55.6, 52.5, 49.6],
+        },
+    }
+    sent_params = {}
+
+    def fake_get(url, params=None, timeout=None):
+        sent_params.update(params)  # remember what the code sent
+        return FakeResponse(data)
+
+    monkeypatch.setattr(weather.requests, "get", fake_get)
+
+    weather.get_weather(48.85, 2.35, "F")
+
+    assert sent_params["temperature_unit"] == "fahrenheit"
+
+
+def test_format_report_in_fahrenheit():
+    location = {"name": "Paris", "country": "France"}
+    report_data = {"temperature": 65.1, "wind_speed": 12.3,
+                   "high": 70.0, "low": 54.7}
+
+    report = weather.format_report(location, report_data, "F")
+
+    assert report == (
+        "Weather for Paris, France\n"
+        "  Temperature:  65.1 °F\n"
+        "  Wind speed:   12.3 km/h\n"
+        "  Today:        high 70.0 °F / low 54.7 °F"
+    )
